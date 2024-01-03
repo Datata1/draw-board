@@ -1,0 +1,8 @@
+prepare:
+  steps:
+    - command: npm install express http socket.io
+test:
+  steps: []
+run:
+  steps:
+    - command: node server.js

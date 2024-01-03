@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collaborative Drawing Board</title>
+  <style>
+    #canvas {
+      border: 1px solid #000;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas" width="800" height="600"></canvas>
+
+  <!-- Color and Brush Size controls -->
+  <input type="color" id="colorPicker" value="#000000">
+  <label for="brushSize">Brush Size:</label>
+  <input type="range" id="brushSize" min="1" max="10" value="2">
+
+  <script src="https://cdn.socket.io/4.1.2/socket.io.min.js"></script>
+  <script>
+    const socket = io('https://51793-3000.2.codesphere.com/');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    const colorPicker = document.getElementById('colorPicker');
+    const brushSizeInput = document.getElementById('brushSize');
+
+    let isDrawing = false;
+    let currentColor = colorPicker.value;
+    let currentBrushSize = brushSizeInput.value;
+
+    // Event to initialize the canvas with existing drawing data
+    socket.on('init', (initData) => {
+      initData.forEach((data) => {
+        drawLine(data);
+      });
+    });
+
+    socket.on('draw', (data) => {
+      drawLine(data);
+    });
+
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+
+    colorPicker.addEventListener('input', () => {
+      currentColor = colorPicker.value;
+      sendDrawEvent('colorChange', { color: currentColor });
+    });
+
+    brushSizeInput.addEventListener('input', () => {
+      currentBrushSize = brushSizeInput.value;
+      sendDrawEvent('brushSizeChange', { brushSize: currentBrushSize });
+    });
+
+    function startDrawing(event) {
+      isDrawing = true;
+      const coordinates = getCoordinates(event);
+      sendDrawEvent('start', coordinates);
+    }
+
+    function draw(event) {
+      if (!isDrawing) return;
+      const coordinates = getCoordinates(event);
+      sendDrawEvent('draw', coordinates);
+    }
+
+    function stopDrawing() {
+      isDrawing = false;
+      sendDrawEvent('stop');
+    }
+
+    function getCoordinates(event) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top
+      };
+    }
+
+    function sendDrawEvent(action, coordinates = {}) {
+  const eventData = { action, coordinates, color: currentColor, brushSize: currentBrushSize };
+  socket.emit('draw', eventData);
+}
+
+
+    function drawLine(data) {
+  const { action, coordinates, color, brushSize } = data;
+
+  if (!coordinates || !coordinates.x || !coordinates.y) {
+    console.error("Invalid coordinates:", coordinates);
+    return;
+  }
+
+  context.lineWidth = brushSize;
+  context.lineCap = 'round';
+  context.strokeStyle = color;
+
+  if (action === 'start') {
+    context.beginPath();
+    context.moveTo(coordinates.x, coordinates.y);
+  } else if (action === 'draw') {
+    context.lineTo(coordinates.x, coordinates.y);
+    context.stroke();
+  } else if (action === 'stop') {
+    context.closePath();
+  }
+}
+  </script>
+</body>
+</html>
