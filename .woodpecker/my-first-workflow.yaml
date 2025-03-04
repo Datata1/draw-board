@@ -3,7 +3,7 @@ when:
     branch: main
 
 steps:
-  - name: build
+  - name: buildsfsfd
     image: bash
     commands:
       - echo "This is the build step"
