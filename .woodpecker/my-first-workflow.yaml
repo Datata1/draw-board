@@ -3,7 +3,7 @@ when:
     branch: main
 
 steps:
-  - name: builddddd
+  - name: build
     image: bash
     commands:
       - echo "This is the build step"
@@ -11,4 +11,4 @@ steps:
   - name: a-test-step
     image: bash
     commands:
-      - echo "Testing ..ssasdads."
+      - echo "Testing ..."
